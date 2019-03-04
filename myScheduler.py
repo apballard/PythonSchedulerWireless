@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import datetime
 import logging
 import os
@@ -9,6 +10,7 @@ import schedule as schedule
 from pushover import init, Client, RequestError
 
 # interval = 60
+# ps aux | grep -e myScheduler.py | grep -v grep | awk '{print $2}'
 start = datetime.time(17, 55, 0)
 end = datetime.time(23, 5, 0)
 my_exception_count = 0
@@ -48,29 +50,36 @@ def time_in_range(my_start, my_end, my_current_time):
 def do_something():
     global my_exception_count
     current_time = datetime.datetime.now().time()
-    wireless_network = subprocess.check_output(['iwgetid', 'wlan0', '--raw']).strip()
+    wireless_network = subprocess.check_output(['iwgetid', 'wlan0', '--raw']).strip().decode()
     logger.info("Current network is: " + wireless_network)
 
     if time_in_range(start, end, current_time):
         if wireless_network != "Morpheus2":
+            logger.info("Network change is imminent")
             logger.info(subprocess.check_output(['wpa_cli', '-i', 'wlan0', 'select_network', '0']))
             logger.info("Network changed to Morpheus2")
-            send_message("Network changed to Morpheus2", "Internet Connection")
+            send_message("Internet Connection", "Network changed to Morpheus2")
             logger.info("Message send complete")
     else:
         if wireless_network != "Morpheus3":
+            logger.info("Network change is imminent")
             logger.info(subprocess.check_output(['wpa_cli', '-i', 'wlan0', 'select_network', '1']))
             logger.info("Network changed to Morpheus3")
-            send_message("Network changed to Morpheus3", "Internet Connection")
+            send_message("Internet Connection", "Network changed to Morpheus3")
             logger.info("Message send complete")
     if my_exception_count >= 10:
         os.symlink("reboot")
 
 
+send_message("Internet Connection", "Starting UP!")
+do_something()
+
 schedule.every(1).minutes.do(do_something)
 
-while 1:
-    schedule.run_pending()
-    time.sleep(1)
-
-logger.info("Application came to an end!!")
+try:
+    while 1:
+        schedule.run_pending()
+        time.sleep(1)
+finally:
+    logger.info("Application came to an end!!")
+    send_message("Internet Connection", "Application Stopped!")
