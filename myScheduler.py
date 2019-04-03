@@ -83,3 +83,4 @@ try:
 finally:
     logger.info("Application came to an end!!")
     send_message("Internet Connection", "Application Stopped!")
+os.symlink("reboot")
